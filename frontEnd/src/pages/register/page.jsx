@@ -2,28 +2,29 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login } = useAuth();
+  const { register } = useAuth();
 
-  const handleLogin = async (e) => {
+  const handleRegistration = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      const resp = await login(email, password);
+      const resp = await register(name, email, password);
       if (resp?.data?.user) {
         navigate('/dashboard', { replace: true });
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Login failed. Please check your credentials and try again.');
+      console.error('Registration error:', err);
+      const msg = err?.response?.data?.message || err?.message || String(err);
+      setError(msg || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -37,11 +38,30 @@ export default function Login() {
             <div className="w-16 h-16 bg-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <i className="ri-file-text-line text-3xl text-white"></i>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Login</h1>
-            <p className="text-gray-500 mt-2">Access your PDF management dashboard</p>
+            <h1 className="text-3xl font-bold text-gray-900">Admin Registration</h1>
+            <p className="text-gray-500 mt-2">Create a new admin account</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleRegistration} className="space-y-6">
+            <div>
+              <label htmlFor="Name" className="block text-sm font-medium text-gray-700 mb-2">
+                Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i className="ri-user-line text-gray-400 text-lg"></i>
+                </div>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition text-sm"
+                  placeholder="Enter your name"
+                  required
+                />
+              </div>
+            </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
@@ -99,20 +119,15 @@ export default function Login() {
                   Signing in...
                 </span>
               ) : (
-                'Sign In'
+                'Register'
               )}
             </button>
           </form>
 
           <div className="flex flex-col items-center justify-center gap-1 mt-6">
             <div className="text-center">
-              <a href="#" className="text-sm text-teal-500 hover:text-teal-600 transition">
-                Forgot your password?
-              </a>
-            </div>
-            <div className="text-center">
-              <a href="/register" className="text-sm text-teal-500 hover:text-teal-600 transition">
-                Can't Sign-In? Register
+              <a href="/login" className="text-sm text-teal-500 hover:text-teal-600 transition">
+                Already have an account? Sign In
               </a>
             </div>
           </div>
