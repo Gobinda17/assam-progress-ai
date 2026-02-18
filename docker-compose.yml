@@ -1,23 +1,23 @@
 services:
-  mongo:
+  rag_mongo:
     image: mongo:7
     container_name: rag_mongo
     restart: always
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
-      - mongo_data:/data/db
+      - rag_mongo_data:/data/db
 
-  redis:
+  rag_redis:
     image: redis:7
     container_name: rag_redis
     restart: always
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - rag_redis_data:/data
 
-  qdrant:
+  rag_qdrant:
     image: qdrant/qdrant:latest
     container_name: rag_qdrant
     restart: always
@@ -25,9 +25,9 @@ services:
       - "6333:6333"
       - "6334:6334"
     volumes:
-      - qdrant_data:/qdrant/storage
+      - rag_qdrant_data:/qdrant/storage
 
 volumes:
-  mongo_data:
-  redis_data:
-  qdrant_data:
+  rag_mongo_data:
+  rag_redis_data:
+  rag_qdrant_data:

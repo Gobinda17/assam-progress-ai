@@ -23,7 +23,8 @@ export default function Login() {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Login failed. Please check your credentials and try again.');
+      const msg = err?.response?.data?.errors || err?.errors || String(err);
+      setError(msg || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -5,6 +5,8 @@ const API_URL = "http://localhost:5000/api";
 
 const AuthContext = createContext();
 
+axios.defaults.withCredentials = true;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);

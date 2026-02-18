@@ -23,7 +23,7 @@ export default function Register() {
       }
     } catch (err) {
       console.error('Registration error:', err);
-      const msg = err?.response?.data?.message || err?.message || String(err);
+      const msg = err?.response?.data?.errors || err?.errors || String(err);
       setError(msg || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
