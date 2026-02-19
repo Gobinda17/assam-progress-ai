@@ -3,6 +3,8 @@ import Home from "../pages/home/page";
 import Login from "../pages/login/page";
 import Dashboard from "../pages/dashboard/page";
 import Register from "../pages/register/page";
+import ProfilePage from "../pages/dashboard/profile/page";
+import UserManagementPage from "../pages/dashboard/users/page";
 import { useAuth } from "../context/AuthContext";
 import { Navigate } from "react-router-dom";
 
@@ -38,9 +40,20 @@ const routes = [
     element: <Login />,
   },
   {
-
     path: "/dashboard",
-    element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
+    element: (
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dashboard/profile",
+    element: <ProfilePage />,
+  },
+  {
+    path: "/dashboard/users",
+    element: <UserManagementPage />,
   },
   {
     path: "*",

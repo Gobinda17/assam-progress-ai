@@ -1,6 +1,10 @@
 import bcrypt from "bcrypt";
 import User from "../models/User.js";
-import { signAccessToken, signRefreshToken, verifyRefresh } from "../utils/jwt.js";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefresh,
+} from "../utils/jwt.js";
 
 const cookieBase = {
   httpOnly: true,
@@ -10,17 +14,25 @@ const cookieBase = {
 };
 
 function setAuthCookies(res, accessToken, refreshToken) {
-  res.cookie("access_token", accessToken, { ...cookieBase, maxAge: 15 * 60 * 1000 });
-  res.cookie("refresh_token", refreshToken, { ...cookieBase, maxAge: 7 * 24 * 60 * 60 * 1000 });
+  res.cookie("access_token", accessToken, {
+    ...cookieBase,
+    maxAge: 15 * 60 * 1000,
+  });
+  res.cookie("refresh_token", refreshToken, {
+    ...cookieBase,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 }
 
 export async function register(req, res) {
   try {
     const { name, email, password } = req.body || {};
-    if (!name || !email || !password) return res.status(400).json({ message: "Missing fields" });
+    if (!name || !email || !password)
+      return res.status(400).json({ message: "Missing fields" });
 
     const existing = await User.findOne({ email });
-    if (existing) return res.status(409).json({ message: "Email already in use" });
+    if (existing)
+      return res.status(409).json({ message: "Email already in use" });
 
     const passwordHash = await bcrypt.hash(password, 12);
 
@@ -30,7 +42,11 @@ export async function register(req, res) {
 
     const user = await User.create({ name, email, passwordHash, role });
 
-    const accessToken = signAccessToken({ userId: user._id.toString(), role: user.role, email: user.email });
+    const accessToken = signAccessToken({
+      userId: user._id.toString(),
+      role: user.role,
+      email: user.email,
+    });
     const refreshToken = signRefreshToken({ userId: user._id.toString() });
 
     user.refreshTokenHash = await bcrypt.hash(refreshToken, 12);
@@ -39,7 +55,12 @@ export async function register(req, res) {
     setAuthCookies(res, accessToken, refreshToken);
 
     res.status(201).json({
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error("Register error:", error);
@@ -50,7 +71,8 @@ export async function register(req, res) {
 export async function login(req, res) {
   try {
     const { email, password } = req.body || {};
-    if (!email || !password) return res.status(400).json({ message: "Missing fields" });
+    if (!email || !password)
+      return res.status(400).json({ message: "Missing fields" });
 
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
@@ -58,7 +80,11 @@ export async function login(req, res) {
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
-    const accessToken = signAccessToken({ userId: user._id.toString(), role: user.role, email: user.email });
+    const accessToken = signAccessToken({
+      userId: user._id.toString(),
+      role: user.role,
+      email: user.email,
+    });
     const refreshToken = signRefreshToken({ userId: user._id.toString() });
 
     user.refreshTokenHash = await bcrypt.hash(refreshToken, 12);
@@ -67,7 +93,12 @@ export async function login(req, res) {
     setAuthCookies(res, accessToken, refreshToken);
 
     res.json({
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -77,9 +108,18 @@ export async function login(req, res) {
 
 export async function me(req, res) {
   try {
-    const user = await User.findById(req.user.userId).select("_id name email role").lean();
+    const user = await User.findById(req.user.userId)
+      .select("_id name email role")
+      .lean();
     if (!user) return res.status(404).json({ message: "Not found" });
-    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (error) {
     console.error("Me error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -99,12 +139,17 @@ export async function refresh(req, res) {
     }
 
     const user = await User.findById(decoded.userId);
-    if (!user || !user.refreshTokenHash) return res.status(401).json({ message: "Unauthorized" });
+    if (!user || !user.refreshTokenHash)
+      return res.status(401).json({ message: "Unauthorized" });
 
     const match = await bcrypt.compare(token, user.refreshTokenHash);
     if (!match) return res.status(401).json({ message: "Unauthorized" });
 
-    const accessToken = signAccessToken({ userId: user._id.toString(), role: user.role, email: user.email });
+    const accessToken = signAccessToken({
+      userId: user._id.toString(),
+      role: user.role,
+      email: user.email,
+    });
     const refreshToken = signRefreshToken({ userId: user._id.toString() });
 
     user.refreshTokenHash = await bcrypt.hash(refreshToken, 12);
@@ -112,7 +157,15 @@ export async function refresh(req, res) {
 
     setAuthCookies(res, accessToken, refreshToken);
 
-    res.json({ ok: true });
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      ok: true,
+    });
   } catch (error) {
     console.error("Refresh error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -127,7 +180,10 @@ export async function logout(req, res) {
       // best-effort invalidate
       try {
         const decoded = verifyRefresh(token);
-        await User.updateOne({ _id: decoded.userId }, { $set: { refreshTokenHash: null } });
+        await User.updateOne(
+          { _id: decoded.userId },
+          { $set: { refreshTokenHash: null } },
+        );
       } catch {}
     }
 

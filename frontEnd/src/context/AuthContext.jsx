@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("isAuthenticated");
       }
     }
-    setIsLoading(false);
+    refreshUser().finally(() => setIsLoading(false));
   }, []);
 
   const saverUser = (userData) => {
@@ -64,6 +64,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/refresh`, { withCredentials: true });
+      if (res.data?.user) {
+        saverUser(res.data.user);
+      } else {
+        saverUser(null);
+      }
+    } catch (error) {
+      saverUser(null);
+    }
+  };
+
   const login = async (email, password) => {
     try {
       const resp = await axios.post(`${API_URL}/auth/login`, {
@@ -85,6 +98,7 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     register,
     saverUser,
+    refreshUser,
     login,
   };
 
