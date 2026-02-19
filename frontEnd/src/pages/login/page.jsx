@@ -22,7 +22,7 @@ export default function Login() {
         navigate('/dashboard', { replace: true });
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('Login error:', err.message || err);
       const msg = err?.response?.data?.errors || err?.errors || String(err);
       setError(msg || 'Login failed. Please try again.');
     } finally {

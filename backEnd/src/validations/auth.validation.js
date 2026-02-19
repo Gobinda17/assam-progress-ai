@@ -9,7 +9,12 @@ export const registrationValidation = [
 export const loginValidation = [
     body('email').notEmpty().withMessage('Email is required.').isEmail().withMessage('Email is invalid.'),
     body('password').notEmpty().withMessage('Password is required.'),
-]
+];
+
+export const updatePasswordValidation = [
+    body('currentPassword').notEmpty().withMessage('Current password is required.'),
+    body('newPassword').notEmpty().withMessage('New password is required.').isLength({ min: 6 }).withMessage('New password length must be at least 6 characters long.'),
+];
 
 // const updateEmailValidation = [
 //     body('newEmail').notEmpty().withMessage('New email is required.').isEmail().withMessage('New email is invalid.'),

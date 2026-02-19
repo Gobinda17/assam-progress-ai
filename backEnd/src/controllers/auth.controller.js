@@ -4,6 +4,7 @@ import {
   signAccessToken,
   signRefreshToken,
   verifyRefresh,
+  verifyAccess,
 } from "../utils/jwt.js";
 
 const cookieBase = {
@@ -78,7 +79,7 @@ export async function login(req, res) {
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
     const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) return res.status(401).json({ message: "Invalid credentials" });
+    if (!ok) return res.status(401).json({ status: 'fail',message: "Invalid credentials" });
 
     const accessToken = signAccessToken({
       userId: user._id.toString(),
@@ -98,6 +99,7 @@ export async function login(req, res) {
         name: user.name,
         email: user.email,
         role: user.role,
+        createdAt: user.createdAt,
       },
     });
   } catch (error) {
@@ -174,17 +176,20 @@ export async function refresh(req, res) {
 
 export async function logout(req, res) {
   try {
-    const token = req.cookies?.refresh_token;
+    const token = req.cookies?.access_token;
 
     if (token) {
       // best-effort invalidate
       try {
-        const decoded = verifyRefresh(token);
+        const decoded = verifyAccess(token);
         await User.updateOne(
           { _id: decoded.userId },
           { $set: { refreshTokenHash: null } },
         );
-      } catch {}
+      } catch (err) {
+        console.error("Error invalidating access token:", err);
+        res.status(500).json({ message: "Error invalidating access token" });
+      }
     }
 
     res.clearCookie("access_token", { path: "/" });
@@ -192,6 +197,37 @@ export async function logout(req, res) {
     res.json({ ok: true });
   } catch (error) {
     console.error("Logout error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function updatePassword(req, res) {
+  const { currentPassword, newPassword } = req.body || {};
+  try {
+    const token = req.cookies?.access_token;
+    if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+    let decoded;
+    try {
+      decoded = verifyAccess(token);
+    } catch (err) {
+      console.error("Error verifying access token:", err);
+      res.status(500).json({ message: "Error verifying access token" });
+    }
+
+    const user = await User.findById(decoded.userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!ok) return res.status(401).json({ message: "Invalid current password" });
+
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+
+  } catch (error) {
+    console.error("Update password error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }

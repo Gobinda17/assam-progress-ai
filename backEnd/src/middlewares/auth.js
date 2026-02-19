@@ -35,6 +35,7 @@ export function loginAuth(req, res, next) {
 
 export function requireAuth(req, res, next) {
   try {
+    if (handleValidationErrors(req, res)) return;
     const header = req.headers.authorization || "";
     const bearer = header.startsWith("Bearer ") ? header.slice(7) : null;
 

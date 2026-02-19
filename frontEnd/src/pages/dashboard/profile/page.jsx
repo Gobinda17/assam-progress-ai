@@ -3,9 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import ProfileDetails from './components/ProfileDetails';
 import ChangePassword from './components/ChangePassword';
+import { useAuth } from '../../../context/AuthContext.jsx';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+
+  const { user, updatePassword } = useAuth();
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAuthenticated');
@@ -16,7 +19,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Navbar />
+      <Navbar user={user} />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
@@ -32,8 +35,8 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-6">
-          <ProfileDetails />
-          <ChangePassword />
+          <ProfileDetails user={user} />
+          <ChangePassword updatePassword={updatePassword} />
         </div>
       </div>
     </div>

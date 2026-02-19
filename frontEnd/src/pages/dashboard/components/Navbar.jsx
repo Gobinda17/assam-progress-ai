@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
-export default function Navbar() {
+export default function Navbar({ user }) {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -45,7 +45,7 @@ export default function Navbar() {
                   <i className="ri-user-line text-white text-sm"></i>
                 </div>
                 <span className="hidden sm:inline text-sm font-medium text-gray-700">
-                  Admin User
+                  {user?.name || "Admin User"}
                 </span>
                 <i
                   className={`ri-arrow-down-s-line text-gray-500 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
@@ -57,10 +57,10 @@ export default function Navbar() {
                   {/* User Info Header */}
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-semibold text-gray-900">
-                      Admin User
+                      {user?.name || "Admin User"}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      admin@pdfrag.com
+                      {user?.email || "admin@pdfrag.com"}
                     </p>
                   </div>
 

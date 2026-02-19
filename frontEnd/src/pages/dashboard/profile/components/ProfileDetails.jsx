@@ -1,7 +1,4 @@
-import { mockCurrentUser } from '../../../../mocks/users';
-
-export default function ProfileDetails() {
-  const user = mockCurrentUser;
+export default function ProfileDetails({ user }) {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -27,10 +24,10 @@ export default function ProfileDetails() {
             <i className="ri-user-line text-3xl text-white"></i>
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>
+            <h3 className="text-xl font-bold text-gray-900">{user?.name || "Admin User"}</h3>
             <span className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 bg-teal-100 text-teal-700 text-xs font-semibold rounded-full">
               <i className="ri-shield-star-line"></i>
-              {user.role}
+              {user?.role || "Administrator"}
             </span>
           </div>
         </div>
@@ -41,7 +38,7 @@ export default function ProfileDetails() {
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Full Name</label>
             <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-lg">
               <i className="ri-user-line text-gray-400"></i>
-              <span className="text-sm text-gray-900 font-medium">{user.name}</span>
+              <span className="text-sm text-gray-900 font-medium">{user?.name || "Admin User"}</span>
             </div>
           </div>
 
@@ -49,7 +46,7 @@ export default function ProfileDetails() {
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Email Address</label>
             <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-lg">
               <i className="ri-mail-line text-gray-400"></i>
-              <span className="text-sm text-gray-900 font-medium">{user.email}</span>
+              <span className="text-sm text-gray-900 font-medium">{user?.email || "admin@pdfrag.com"}</span>
             </div>
           </div>
 
@@ -57,7 +54,7 @@ export default function ProfileDetails() {
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Role</label>
             <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-lg">
               <i className="ri-shield-user-line text-gray-400"></i>
-              <span className="text-sm text-gray-900 font-medium">{user.role}</span>
+              <span className="text-sm text-gray-900 font-medium">{user?.role || "Administrator"}</span>
             </div>
           </div>
 
@@ -65,17 +62,17 @@ export default function ProfileDetails() {
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Member Since</label>
             <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-lg">
               <i className="ri-calendar-line text-gray-400"></i>
-              <span className="text-sm text-gray-900 font-medium">{formatDate(user.joinedDate)}</span>
+              <span className="text-sm text-gray-900 font-medium">{formatDate(user?.createdAt)}</span>
             </div>
           </div>
 
-          <div className="space-y-1 md:col-span-2">
+          {/* <div className="space-y-1 md:col-span-2">
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Last Login</label>
             <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-lg">
               <i className="ri-time-line text-gray-400"></i>
               <span className="text-sm text-gray-900 font-medium">{formatDate(user.lastLogin)}</span>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

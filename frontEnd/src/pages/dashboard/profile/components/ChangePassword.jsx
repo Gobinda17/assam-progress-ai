@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function ChangePassword() {
+export default function ChangePassword({ updatePassword }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,8 +18,8 @@ export default function ChangePassword() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setToast({ type: 'error', message: 'New password must be at least 8 characters.' });
+    if (newPassword.length < 6) {
+      setToast({ type: 'error', message: 'New password must be at least 6 characters.' });
       return;
     }
 
@@ -29,15 +29,18 @@ export default function ChangePassword() {
     }
 
     setLoading(true);
-    // Mock password update
-    setTimeout(() => {
-      setLoading(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setToast({ type: 'success', message: 'Password updated successfully!' });
-      setTimeout(() => setToast(null), 3000);
-    }, 1200);
+    updatePassword(currentPassword, newPassword)
+      .then(() => {
+        setToast({ type: 'success', message: 'Password updated successfully!' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      })
+      .catch((err) => {
+        const msg = err?.response?.data?.message || String(err);
+        setToast({ type: 'error', message: msg || 'Failed to update password. Please try again.' });
+      })
+      .finally(() => setLoading(false));
   };
 
   return (

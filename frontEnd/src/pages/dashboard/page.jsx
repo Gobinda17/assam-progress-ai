@@ -4,11 +4,14 @@ import Navbar from './components/Navbar';
 import UploadSection from './components/UploadSection';
 import PDFList from './components/PDFList';
 import { mockPDFs } from '../../mocks/pdfs';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [pdfs, setPdfs] = useState(mockPDFs);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const { user } = useAuth();
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAuthenticated');
@@ -52,7 +55,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Navbar />
+      <Navbar user={user} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">

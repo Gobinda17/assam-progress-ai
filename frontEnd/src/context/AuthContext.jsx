@@ -88,6 +88,19 @@ export const AuthProvider = ({ children }) => {
       }
       return resp;
     } catch (err) {
+      throw err?.response?.data?.message || err.message;
+    }
+  };
+
+  const updatePassword = async (currentPassword, newPassword) => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/me/update-password`, {
+        currentPassword,
+        newPassword,
+      });
+      return res;
+
+    } catch (err) {
       throw err;
     }
   };
@@ -100,6 +113,7 @@ export const AuthProvider = ({ children }) => {
     saverUser,
     refreshUser,
     login,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
