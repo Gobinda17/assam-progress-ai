@@ -36,8 +36,8 @@ export default function Dashboard() {
     // Simulate processing
     newPDFs.forEach((pdf, index) => {
       setTimeout(() => {
-        setPdfs(prev => prev.map(p => 
-          p.id === pdf.id 
+        setPdfs(prev => prev.map(p =>
+          p.id === pdf.id
             ? { ...p, status: 'completed', vectorized: true, pages: Math.floor(Math.random() * 50) + 10 }
             : p
         ));
@@ -56,7 +56,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar user={user} />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">PDF Management Dashboard</h1>
@@ -105,7 +105,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <UploadSection onUpload={handleUpload} />
+        {user.role === 'SUPERADMIN' ? (
+          <UploadSection onUpload={handleUpload} />
+        ) : ''}
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
           <div className="p-6 border-b border-gray-100">
