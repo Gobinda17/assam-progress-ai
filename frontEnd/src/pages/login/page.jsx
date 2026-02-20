@@ -9,7 +9,16 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
+
+  // if (isAuthenticated) {
+  //   if (user && user.role === 'SUPERADMIN') {
+  //     navigate('/dashboard', { replace: true });
+  //   } else {
+  //     navigate('/chat', { replace: true });
+  //   }
+  //   return null;
+  // }
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -19,7 +28,11 @@ export default function Login() {
     try {
       const resp = await login(email, password);
       if (resp?.data?.user) {
-        navigate('/dashboard', { replace: true });
+        if (resp.data.user.role === 'SUPERADMIN') {
+          navigate('/dashboard', { replace: true });
+        } else {
+          navigate('/chat', { replace: true });
+        }
       }
     } catch (err) {
       console.error('Login error:', err.message || err);

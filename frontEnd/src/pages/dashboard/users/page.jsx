@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import UserTable from './components/UserTable';
 import { mockUsers } from '../../../mocks/users';
+import { useAuth } from '../../../context/AuthContext.jsx';
 
 export default function UserManagementPage() {
   const navigate = useNavigate();
@@ -12,12 +13,13 @@ export default function UserManagementPage() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [toast, setToast] = useState(null);
 
+  const { user, isAuthenticated, isLoading } = useAuth();
+
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem('isAuthenticated');
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       navigate('/login');
     }
-  }, [navigate]);
+  }, [isLoading, isAuthenticated, navigate]);
 
   const showToast = (type, message) => {
     setToast({ type, message });
@@ -55,7 +57,7 @@ export default function UserManagementPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Navbar />
+      <Navbar user={user} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
@@ -165,11 +167,10 @@ export default function UserManagementPage() {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
-          <div className={`flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg text-sm font-medium ${
-            toast.type === 'success'
+          <div className={`flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg text-sm font-medium ${toast.type === 'success'
               ? 'bg-green-600 text-white'
               : 'bg-red-600 text-white'
-          }`}>
+            }`}>
             <i className={toast.type === 'success' ? 'ri-checkbox-circle-line text-lg' : 'ri-error-warning-line text-lg'}></i>
             {toast.message}
           </div>

@@ -11,7 +11,7 @@ export default function Dashboard() {
   const [pdfs, setPdfs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { user, API_URL } = useAuth();
+  const { user, API_URL, isAuthenticated, isLoading } = useAuth();
 
   const pdfsRef = useRef(pdfs);
   useEffect(() => {
@@ -19,11 +19,10 @@ export default function Dashboard() {
   }, [pdfs]);
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem('isAuthenticated');
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       navigate('/login');
     }
-  }, [navigate]);
+  }, [isLoading, isAuthenticated, navigate]);
 
   const mapBackendStatusToUiStatus = useCallback((backendStatus) => {
     switch (backendStatus) {

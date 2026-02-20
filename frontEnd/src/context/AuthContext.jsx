@@ -92,6 +92,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const logout = async () => {
+    try {
+      await axios.post(`${API_URL}/auth/logout`);
+    } catch (err) {
+      // ignore logout API failures and clear client auth state anyway
+    } finally {
+      saverUser(null);
+    }
+  };
+
   const updatePassword = async (currentPassword, newPassword) => {
     try {
       const res = await axios.post(`${API_URL}/auth/me/update-password`, {
@@ -113,6 +123,7 @@ export const AuthProvider = ({ children }) => {
     saverUser,
     refreshUser,
     login,
+    logout,
     updatePassword,
     API_URL,
   };
