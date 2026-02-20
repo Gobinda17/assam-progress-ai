@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/auth.routes.js";
 import adminDocumentsRoutes from "./routes/adminDocuments.routes.js";
+import chatRoutes from "./routes/chat.routes.js";
 
 const app = express();
 
@@ -23,6 +24,8 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRoutes);
 
 app.use("/api/admin", adminDocumentsRoutes);
+
+app.use("/api/chat", chatRoutes);
 
 await connectDB(process.env.MONGO_URI);
 
