@@ -5,6 +5,7 @@
     "start": "node src/server.js"
   },
   "dependencies": {
+    "@qdrant/js-client-rest": "^1.17.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.69.3",
     "cookie-parser": "^1.4.7",
@@ -16,7 +17,10 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.1",
     "multer": "^2.0.2",
-    "nanoid": "^5.1.6"
+    "nanoid": "^5.1.6",
+    "openai": "^6.22.0",
+    "pdfjs-dist": "^5.4.624",
+    "pino": "^10.3.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
