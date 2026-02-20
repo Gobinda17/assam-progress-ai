@@ -1,17 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Navbar from './components/Navbar';
 import UploadSection from './components/UploadSection';
 import PDFList from './components/PDFList';
-import { mockPDFs } from '../../mocks/pdfs';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [pdfs, setPdfs] = useState(mockPDFs);
+  const [pdfs, setPdfs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { user } = useAuth();
+  const { user, API_URL } = useAuth();
+
+  const pdfsRef = useRef(pdfs);
+  useEffect(() => {
+    pdfsRef.current = pdfs;
+  }, [pdfs]);
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAuthenticated');
@@ -20,37 +25,154 @@ export default function Dashboard() {
     }
   }, [navigate]);
 
-  const handleUpload = (files) => {
-    const newPDFs = Array.from(files).map((file, index) => ({
-      id: `pdf-${Date.now()}-${index}`,
+  const mapBackendStatusToUiStatus = useCallback((backendStatus) => {
+    switch (backendStatus) {
+      case 'ready':
+        return 'completed';
+      case 'failed':
+        return 'failed';
+      case 'queued':
+      case 'processing':
+      default:
+        return 'processing';
+    }
+  }, []);
+
+  const mapDocToPdf = useCallback(
+    (doc) => ({
+      id: doc._id,
+      name: doc.filename,
+      size: doc.sizeBytes,
+      uploadDate: doc.createdAt || doc.updatedAt || new Date().toISOString(),
+      status: mapBackendStatusToUiStatus(doc.status),
+      vectorized: doc.status === 'ready',
+      pages: 0,
+      _backendStatus: doc.status,
+    }),
+    [mapBackendStatusToUiStatus]
+  );
+
+  const fetchAdminDocs = useCallback(async () => {
+    if (!user || user.role !== 'SUPERADMIN') {
+      setPdfs([]);
+      return;
+    }
+    try {
+      const res = await axios.get(`${API_URL}/admin/documents`);
+      const docs = Array.isArray(res.data) ? res.data : [];
+      setPdfs(docs.map(mapDocToPdf));
+    } catch (err) {
+      console.error('Failed to load documents:', err);
+    }
+  }, [API_URL, mapDocToPdf, user]);
+
+  useEffect(() => {
+    fetchAdminDocs();
+  }, [fetchAdminDocs]);
+
+  const handleUpload = async (files, category) => {
+    const fileList = Array.from(files || []);
+    if (fileList.length === 0) return;
+
+    const placeholders = fileList.map((file, index) => ({
+      id: `local-${Date.now()}-${index}`,
       name: file.name,
       size: file.size,
       uploadDate: new Date().toISOString(),
       status: 'processing',
       vectorized: false,
-      pages: 0
+      pages: 0,
+      _local: true,
     }));
 
-    setPdfs([...newPDFs, ...pdfs]);
+    setPdfs((prev) => [...placeholders, ...prev]);
 
-    // Simulate processing
-    newPDFs.forEach((pdf, index) => {
-      setTimeout(() => {
-        setPdfs(prev => prev.map(p =>
-          p.id === pdf.id
-            ? { ...p, status: 'completed', vectorized: true, pages: Math.floor(Math.random() * 50) + 10 }
-            : p
-        ));
-      }, 2000 + index * 1000);
-    });
+    await Promise.all(
+      placeholders.map(async (placeholder, idx) => {
+        const file = fileList[idx];
+        const formData = new FormData();
+        formData.append('file', file);
+        if (category) formData.append('category', category);
+
+        try {
+          const res = await axios.post(`${API_URL}/admin/documents/upload`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+
+          const documentId = res?.data?.documentId;
+          setPdfs((prev) =>
+            prev.map((p) =>
+              p.id === placeholder.id
+                ? {
+                    ...p,
+                    id: documentId || p.id,
+                    status: 'processing',
+                    vectorized: false,
+                    _local: false,
+                    _backendStatus: res?.data?.status || 'queued',
+                  }
+                : p
+            )
+          );
+        } catch (err) {
+          console.error('Upload failed:', err);
+          setPdfs((prev) => prev.map((p) => (p.id === placeholder.id ? { ...p, status: 'failed' } : p)));
+        }
+      })
+    );
+
+    // Refresh from server so IDs/statuses match backend
+    await fetchAdminDocs();
   };
+
+  // Poll backend status so queued/processing -> ready updates the UI automatically
+  useEffect(() => {
+    if (!user || user.role !== 'SUPERADMIN') return;
+
+    const intervalId = setInterval(async () => {
+      const current = pdfsRef.current;
+      if (!Array.isArray(current) || current.length === 0) return;
+      const idsToPoll = current
+        .filter((p) => !p._local && p.status === 'processing' && typeof p.id === 'string')
+        .map((p) => p.id);
+
+      if (idsToPoll.length === 0) return;
+
+      try {
+        const statuses = await Promise.all(
+          idsToPoll.map(async (id) => {
+            const res = await axios.get(`${API_URL}/admin/documents/${id}/status`);
+            return { id, backendStatus: res?.data?.status };
+          })
+        );
+
+        const statusMap = new Map(statuses.map((s) => [s.id, s.backendStatus]));
+        setPdfs((prev) =>
+          prev.map((p) => {
+            const backendStatus = statusMap.get(p.id);
+            if (!backendStatus) return p;
+            return {
+              ...p,
+              _backendStatus: backendStatus,
+              status: mapBackendStatusToUiStatus(backendStatus),
+              vectorized: backendStatus === 'ready',
+            };
+          })
+        );
+      } catch (err) {
+        // Ignore transient polling errors
+      }
+    }, 4000);
+
+    return () => clearInterval(intervalId);
+  }, [API_URL, mapBackendStatusToUiStatus, user]);
 
   const handleDelete = (id) => {
-    setPdfs(pdfs.filter(pdf => pdf.id !== id));
+    setPdfs((prev) => prev.filter((pdf) => pdf.id !== id));
   };
 
-  const filteredPDFs = pdfs.filter(pdf =>
-    pdf.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPDFs = (pdfs || []).filter((pdf) =>
+    (pdf?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

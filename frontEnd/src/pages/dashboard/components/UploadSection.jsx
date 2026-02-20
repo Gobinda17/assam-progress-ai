@@ -43,8 +43,8 @@ export default function UploadSection({ onUpload }) {
     fileInputRef.current?.click();
   };
 
-  const handleCategoryChange = (e) => {
-    setSelectedCategory(e.target.value);
+  const handleCategoryChange = (cat) => {
+    setSelectedCategory(cat);
     setShowCategoryError(false);
     setDropdownOpen(false);
   };

@@ -114,6 +114,7 @@ export const AuthProvider = ({ children }) => {
     refreshUser,
     login,
     updatePassword,
+    API_URL,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
