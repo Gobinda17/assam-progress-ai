@@ -1,7 +1,7 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import { Worker } from "bullmq";
-import { nanoid } from "nanoid";
+import { v4 as uuidv4 } from "uuid";
 import IORedis from "ioredis";
 import pino from "pino";
 
@@ -102,7 +102,7 @@ async function run() {
             const vectors = await embedBatch(bufferTexts);
 
             const points = vectors.map((vec, idx) => ({
-              id: nanoid(),
+              id: uuidv4(),
               vector: vec,
               payload: bufferPayloads[idx],
             }));
@@ -124,7 +124,7 @@ async function run() {
       if (bufferTexts.length) {
         const vectors = await embedBatch(bufferTexts);
         const points = vectors.map((vec, idx) => ({
-          id: nanoid(),
+          id: uuidv4(),
           vector: vec,
           payload: bufferPayloads[idx],
         }));
