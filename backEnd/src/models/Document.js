@@ -11,10 +11,8 @@ const DocumentSchema = new mongoose.Schema(
     storagePath: { type: String, required: true }, // disk path now (later S3 key)
 
     // Filters for your UI
-    category: { type: String, default: "all" },   // health|education|infrastructure|all
-    state: { type: String, default: "" },
-    district: { type: String, default: "" },
-
+    category: { type: String, required: true, default: "others" },   // health|education|infrastructure|all
+  
     status: { type: String, enum: ["queued", "processing", "ready", "failed"], default: "queued" },
     progress: { type: Object, default: { stage: "queued" } },
     errorMessage: { type: String, default: "" }

@@ -19,9 +19,9 @@ export async function uploadAdminPdf(req, res) {
         fs.renameSync(req.file.path, finalPath);
 
         // metadata for filtering
-        const category = (req.body.category || "all").toLowerCase();
-        const state = req.body.state || "";
-        const district = req.body.district || "";
+        console.log("📦 req.body.category received:", req.body.category);
+        const category = req.body.category ? String(req.body.category).toLowerCase() : "others";
+        console.log("✅ Category to be saved:", category);
 
         await Document.create({
             _id: documentId,
@@ -31,8 +31,6 @@ export async function uploadAdminPdf(req, res) {
             sizeBytes: req.file.size,
             storagePath: finalPath,
             category,
-            state,
-            district,
             status: "queued",
             progress: { stage: "queued" }
         });

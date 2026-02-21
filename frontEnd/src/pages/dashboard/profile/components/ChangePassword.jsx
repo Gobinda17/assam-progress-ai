@@ -125,9 +125,8 @@ export default function ChangePassword({ updatePassword }) {
 
         {/* Toast */}
         {toast && (
-          <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${
-            toast.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-600'
-          }`}>
+          <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${toast.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-600'
+            }`}>
             <i className={toast.type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line'}></i>
             {toast.message}
           </div>

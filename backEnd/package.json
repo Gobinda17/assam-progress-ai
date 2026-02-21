@@ -5,6 +5,8 @@
     "start": "node src/server.js"
   },
   "dependencies": {
+    "@bull-board/api": "^6.15.0",
+    "@bull-board/express": "^6.15.0",
     "@qdrant/js-client-rest": "^1.17.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.69.3",

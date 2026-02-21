@@ -4,6 +4,20 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import Navbar from '../dashboard/components/Navbar.jsx';
 
+const API_URL = "http://localhost:5000/api";
+
+const categories = [
+    'All',
+    'Health',
+    'Education',
+    'Infrastructure',
+    'Employment',
+    'Women & Youth',
+    'Tea Tribes',
+    'Agriculture',
+    'Law & Order',
+];
+
 function ChatHeader() {
     const { user } = useAuth();
 
@@ -12,7 +26,7 @@ function ChatHeader() {
     );
 }
 
-function EmptyState({ onSuggestionClick }) {
+function EmptyState({ onSuggestionClick, selectedCategories }) {
     const suggestions = [
         'What are the key findings in the ML research paper?',
         'Summarize the product documentation for API integration.',
@@ -30,6 +44,18 @@ function EmptyState({ onSuggestionClick }) {
                 Get accurate, source-linked answers from your knowledge base
             </p>
 
+            {selectedCategories.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-1.5 mb-6 mt-2">
+                    {selectedCategories.map((cat) => (
+                        <span key={cat} className="inline-flex items-center gap-1 px-3 py-1 bg-teal-50 rounded-full text-xs font-medium text-teal-700">
+                            <i className="ri-filter-3-line text-xs"></i>
+                            {cat}
+                        </span>
+                    ))}
+                </div>
+            )}
+            {selectedCategories.length === 0 && <div className="mb-6" />}
+
             <div className="w-full max-w-md space-y-2">
                 {suggestions.map((s, i) => (
                     <button
@@ -43,6 +69,42 @@ function EmptyState({ onSuggestionClick }) {
                         {s}
                     </button>
                 ))}
+            </div>
+        </div>
+    );
+}
+
+function CategoryBar({ selected, onToggle }) {
+    const scrollRef = useRef(null);
+    const isAll = selected.length === 0 || selected.includes('All');
+
+    return (
+        <div className="bg-white border-b border-gray-100 px-4 py-3">
+            <div className="max-w-3xl mx-auto">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Departments</p>
+                <div ref={scrollRef} className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                    <button
+                        onClick={() => onToggle('All')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition cursor-pointer border ${isAll
+                            ? 'bg-teal-500 text-white border-teal-500'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300 hover:text-teal-600'
+                            }`}
+                    >
+                        All
+                    </button>
+                    {categories.filter(c => c !== 'All').map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => onToggle(cat)}
+                            className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition cursor-pointer border ${selected.includes(cat)
+                                ? 'bg-teal-500 text-white border-teal-500'
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-teal-300 hover:text-teal-600'
+                                }`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -108,42 +170,6 @@ function TypingIndicator() {
     );
 }
 
-const mockResponses = {
-    default: {
-        text: "Based on the documents in our knowledge base, I found relevant information. The uploaded PDFs contain detailed insights across multiple categories including research papers, product documentation, and financial reports. Could you be more specific about what you\\'d like to know?",
-        sources: ['Machine Learning Research Paper.pdf', 'Product Documentation v2.3.pdf'],
-    },
-    ml: {
-        text: 'The Machine Learning Research Paper highlights several key findings: (1) A novel transformer architecture that achieves 94.2% accuracy on benchmark datasets, (2) Reduced training time by 37% compared to baseline models, and (3) Improved generalization across multiple domains including NLP and computer vision tasks.',
-        sources: ['Machine Learning Research Paper.pdf'],
-    },
-    api: {
-        text: 'The Product Documentation v2.3 describes the API integration process in detail: You need to authenticate using OAuth 2.0, then use the REST endpoints for CRUD operations. The base URL is configurable, and rate limiting is set at 1000 requests per minute. Webhooks are supported for real-time event notifications.',
-        sources: ['Product Documentation v2.3.pdf'],
-    },
-    revenue: {
-        text: 'According to the Annual Financial Report 2024, total revenue reached $142.5M, representing a 23% year-over-year growth. Key highlights include: Q4 revenue of $42.1M (strongest quarter), SaaS recurring revenue grew 31%, and international markets contributed 38% of total revenue.',
-        sources: ['Annual Financial Report 2024.pdf'],
-    },
-    technical: {
-        text: 'The Technical Specifications document outlines the following for the new module: Processing capacity of 10,000 documents/hour, support for PDF, DOCX, and TXT formats, vector embedding dimensions of 1536, and compatibility with OpenAI, Cohere, and local embedding models. Minimum RAM requirement is 16GB.',
-        sources: ['Technical Specifications.pdf'],
-    },
-};
-
-function getResponse(query) {
-    const lower = query.toLowerCase();
-    if (lower.includes('ml') || lower.includes('machine learning') || lower.includes('key findings'))
-        return mockResponses.ml;
-    if (lower.includes('api') || lower.includes('product documentation') || lower.includes('integration'))
-        return mockResponses.api;
-    if (lower.includes('revenue') || lower.includes('financial') || lower.includes('2024'))
-        return mockResponses.revenue;
-    if (lower.includes('technical') || lower.includes('specification') || lower.includes('module'))
-        return mockResponses.technical;
-    return mockResponses.default;
-}
-
 export default function ChatPage() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -151,9 +177,13 @@ export default function ChatPage() {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [historyLoaded, setHistoryLoaded] = useState(false);
+    const [selectedCategories, setSelectedCategories] = useState([]);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const initialQueryHandled = useRef(false);
+    const threadIdRef = useRef(null);
+    const streamAbortRef = useRef(null);
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -170,13 +200,221 @@ export default function ChatPage() {
     }, [messages, isTyping]);
 
     useEffect(() => {
-        if (location.state?.query && !initialQueryHandled.current) {
+        if (historyLoaded && location.state?.query && !initialQueryHandled.current) {
             initialQueryHandled.current = true;
             handleSend(location.state.query);
         }
-    }, [location.state]);
+    }, [location.state, historyLoaded]);
 
-    const handleSend = (text) => {
+    useEffect(() => {
+        const loadHistory = async () => {
+            if (isLoading || !isAuthenticated) return;
+
+            try {
+                const response = await fetch(`${API_URL}/chat/history`, {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load chat history.');
+                }
+
+                const data = await response.json();
+                threadIdRef.current = data?.threadId || null;
+
+                const savedMessages = Array.isArray(data?.messages)
+                    ? data.messages.map((message, index) => ({
+                        id: `history-${index}-${message.createdAt || Date.now()}`,
+                        role: message.role,
+                        text: message.text || '',
+                        sources: Array.isArray(message.citations)
+                            ? message.citations
+                                .map((item) => {
+                                    if (item?.pageNo) return `${item.documentName} (p.${item.pageNo})`;
+                                    return item?.documentName;
+                                })
+                                .filter(Boolean)
+                            : [],
+                        timestamp: message.createdAt ? new Date(message.createdAt) : new Date(),
+                    }))
+                    : [];
+
+                setMessages(savedMessages);
+            } catch {
+                setMessages([]);
+                threadIdRef.current = null;
+            } finally {
+                setHistoryLoaded(true);
+            }
+        };
+
+        loadHistory();
+    }, [isLoading, isAuthenticated]);
+
+    useEffect(() => {
+        return () => {
+            streamAbortRef.current?.abort();
+        };
+    }, []);
+
+    const parseSSEChunk = (chunk) => {
+        const lines = chunk
+            .split('\n')
+            .map((line) => line.replace(/\r$/, ''));
+
+        let event = 'message';
+        let dataStr = '';
+
+        for (const line of lines) {
+            if (line.startsWith('event:')) {
+                event = line.slice(6).trim();
+            } else if (line.startsWith('data:')) {
+                dataStr += line.slice(5).trim();
+            }
+        }
+
+        let data = null;
+        if (dataStr) {
+            try {
+                data = JSON.parse(dataStr);
+            } catch {
+                data = null;
+            }
+        }
+
+        return { event, data };
+    };
+
+    const streamChatSSE = async ({ question, category, assistantId }) => {
+        streamAbortRef.current?.abort();
+        const controller = new AbortController();
+        streamAbortRef.current = controller;
+
+        const params = new URLSearchParams({ question, category });
+        if (threadIdRef.current) {
+            params.set('threadId', threadIdRef.current);
+        }
+
+        const response = await fetch(`${API_URL}/chat/stream?${params.toString()}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                Accept: 'text/event-stream',
+            },
+            signal: controller.signal,
+        });
+
+        if (!response.ok || !response.body) {
+            throw new Error('Unable to connect to chat stream.');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        let doneReceived = false;
+
+        const appendAssistantToken = (delta) => {
+            if (!delta) return;
+
+            setMessages((prev) => {
+                const idx = prev.findIndex((m) => m.id === assistantId);
+                if (idx === -1) {
+                    return [
+                        ...prev,
+                        {
+                            id: assistantId,
+                            role: 'assistant',
+                            text: delta,
+                            sources: [],
+                            timestamp: new Date(),
+                        },
+                    ];
+                }
+
+                const next = [...prev];
+                next[idx] = {
+                    ...next[idx],
+                    text: `${next[idx].text || ''}${delta}`,
+                };
+                return next;
+            });
+        };
+
+        const setAssistantSources = (citations = []) => {
+            const sources = citations.map((item) => {
+                if (item?.pageNo) return `${item.documentName} (p.${item.pageNo})`;
+                return item?.documentName;
+            }).filter(Boolean);
+
+            setMessages((prev) => {
+                const idx = prev.findIndex((m) => m.id === assistantId);
+                if (idx === -1) {
+                    return [
+                        ...prev,
+                        {
+                            id: assistantId,
+                            role: 'assistant',
+                            text: '',
+                            sources,
+                            timestamp: new Date(),
+                        },
+                    ];
+                }
+
+                const next = [...prev];
+                next[idx] = {
+                    ...next[idx],
+                    sources,
+                };
+                return next;
+            });
+        };
+
+        while (!doneReceived) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const chunks = buffer.split('\n\n');
+            buffer = chunks.pop() || '';
+
+            for (const chunk of chunks) {
+                if (!chunk.trim()) continue;
+
+                const { event, data } = parseSSEChunk(chunk);
+
+                if (event === 'thread' && data?.threadId) {
+                    threadIdRef.current = data.threadId;
+                } else if (event === 'token') {
+                    appendAssistantToken(data?.delta || '');
+                } else if (event === 'citations') {
+                    setAssistantSources(data?.citations || []);
+                } else if (event === 'error') {
+                    throw new Error(data?.message || 'Stream error');
+                } else if (event === 'done') {
+                    doneReceived = true;
+                    break;
+                }
+            }
+        }
+    };
+
+    const handleToggleCategory = (cat) => {
+        if (cat === 'All') {
+            setSelectedCategories([]);
+        } else {
+            setSelectedCategories(prev => {
+                if (prev.includes(cat)) {
+                    return prev.filter(c => c !== cat);
+                } else {
+                    return [...prev, cat];
+                }
+            });
+        }
+    }
+
+    const handleSend = async (text) => {
         const query = text || input.trim();
         if (!query || isTyping) return;
 
@@ -185,35 +423,52 @@ export default function ChatPage() {
             role: 'user',
             text: query,
             timestamp: new Date(),
+            category: selectedCategories.length > 0 ? selectedCategories.join(', ') : undefined,
         };
 
         setMessages((prev) => [...prev, userMsg]);
         setInput('');
         setIsTyping(true);
 
-        setTimeout(() => {
-            try {
-                const response = getResponse(query);
-                const assistantMsg = {
-                    id: `msg-${Date.now() + 1}`,
-                    role: 'assistant',
-                    text: response.text,
-                    sources: response.sources,
-                    timestamp: new Date(),
+        const assistantId = `msg-${Date.now() + 1}`;
+        const category = selectedCategories.length === 1
+            ? selectedCategories[0].toLowerCase()
+            : 'all';
+
+        try {
+            await streamChatSSE({
+                question: query,
+                category,
+                assistantId,
+            });
+        } catch (err) {
+            setMessages((prev) => {
+                const idx = prev.findIndex((m) => m.id === assistantId);
+                const fallbackText = 'Sorry, something went wrong while generating a response.';
+
+                if (idx === -1) {
+                    return [
+                        ...prev,
+                        {
+                            id: assistantId,
+                            role: 'assistant',
+                            text: err?.message || fallbackText,
+                            timestamp: new Date(),
+                        },
+                    ];
+                }
+
+                const next = [...prev];
+                next[idx] = {
+                    ...next[idx],
+                    text: next[idx].text || err?.message || fallbackText,
                 };
-                setMessages((prev) => [...prev, assistantMsg]);
-            } catch {
-                const errorMsg = {
-                    id: `msg-${Date.now() + 1}`,
-                    role: 'assistant',
-                    text: 'Sorry, something went wrong while generating a response.',
-                    timestamp: new Date(),
-                };
-                setMessages((prev) => [...prev, errorMsg]);
-            } finally {
-                setIsTyping(false);
-            }
-        }, 1200 + Math.random() * 800);
+                return next;
+            });
+        } finally {
+            setIsTyping(false);
+        }
+
     };
 
     const handleKeyDown = (e) => {
@@ -228,10 +483,14 @@ export default function ChatPage() {
     return (
         <div className="min-h-screen bg-white flex flex-col">
             <ChatHeader />
+            <CategoryBar
+                selected={selectedCategories}
+                onToggle={handleToggleCategory}
+            />
 
             <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full">
                 {messages.length === 0 ? (
-                    <EmptyState onSuggestionClick={(text) => handleSend(text)} />
+                    <EmptyState onSuggestionClick={(text) => handleSend(text)} selectedCategories={selectedCategories} />
                 ) : (
                     <div className="flex-1 overflow-y-auto px-4 py-6">
                         {messages.map((msg) => (
@@ -243,23 +502,47 @@ export default function ChatPage() {
                 )}
 
                 <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 py-3">
-                    <div className="max-w-3xl mx-auto flex items-center gap-2">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Ask a question about your documents..."
-                            className="flex-1 px-4 py-3 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/20 transition"
-                        />
-                        <button
-                            onClick={() => handleSend()}
-                            disabled={!input.trim() || isTyping}
-                            className="w-11 h-11 flex items-center justify-center bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
-                        >
-                            <i className="ri-send-plane-fill text-base"></i>
-                        </button>
+                    <div className="max-w-3xl mx-auto">
+                        {selectedCategories.length > 0 && (
+                            <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                                {selectedCategories.map((cat) => (
+                                    <span key={cat} className="inline-flex items-center gap-1 px-2.5 py-1 bg-teal-50 rounded-full text-xs font-medium text-teal-700">
+                                        <i className="ri-price-tag-3-line text-[10px]"></i>
+                                        {cat}
+                                        <button
+                                            onClick={() => handleToggleCategory(cat)}
+                                            className="ml-0.5 hover:text-teal-900 cursor-pointer"
+                                        >
+                                            <i className="ri-close-line text-xs"></i>
+                                        </button>
+                                    </span>
+                                ))}
+                                <button
+                                    onClick={() => setSelectedCategories([])}
+                                    className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+                                >
+                                    Clear all
+                                </button>
+                            </div>
+                        )}
+                        <div className='flex items-center gap-2'>
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Ask a question about your documents..."
+                                className="flex-1 px-4 py-3 bg-slate-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/20 transition"
+                            />
+                            <button
+                                onClick={() => handleSend()}
+                                disabled={!input.trim() || isTyping}
+                                className="w-11 h-11 flex items-center justify-center bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
+                            >
+                                <i className="ri-send-plane-fill text-base"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

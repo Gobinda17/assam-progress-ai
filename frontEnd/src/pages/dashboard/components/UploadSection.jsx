@@ -24,14 +24,16 @@ export default function UploadSection({ onUpload }) {
 
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      onUpload(files);
+      setPendingFiles(Array.from(files));
+      setShowCategoryError(false);
     }
   };
 
   const handleFileSelect = (e) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      onUpload(files);
+      setPendingFiles(Array.from(files));
+      setShowCategoryError(false);
     }
     // Reset input
     if (fileInputRef.current) {

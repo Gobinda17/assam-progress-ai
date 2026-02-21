@@ -18,7 +18,7 @@ function sseEvent(res, event, data) {
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
 
-function buildQdrantFilter({ readyDocIds, category, state, district }) {
+function buildQdrantFilter({ readyDocIds, category}) {
   const must = [];
 
   // Only docs that are READY in MongoDB
@@ -31,23 +31,52 @@ function buildQdrantFilter({ readyDocIds, category, state, district }) {
     must.push({ key: "category", match: { value: category } });
   }
 
-  if (district) {
-    must.push({ key: "district", match: { value: district } });
-  } else if (state) {
-    must.push({ key: "state", match: { value: state } });
-  }
-
   return { must };
 }
 
-export async function chatStreamSSE(req, res) {
-  const question = String(req.query.q || "").trim();
+export async function getChatHistory(req, res) {
   const category = String(req.query.category || "all").toLowerCase();
-  const state = String(req.query.state || "");
-  const district = String(req.query.district || "");
+
+  try {
+    const threadQuery = { userId: req.user.userId };
+    if (category !== "all") threadQuery.category = category;
+
+    const thread = await ChatThread.findOne(threadQuery)
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .lean();
+
+    if (!thread) {
+      return res.json({ threadId: null, messages: [] });
+    }
+
+    const messages = await ChatMessage.find({
+      threadId: thread._id,
+      userId: req.user.userId,
+    })
+      .sort({ createdAt: 1 })
+      .select("role content citations createdAt")
+      .lean();
+
+    return res.json({
+      threadId: thread._id.toString(),
+      messages: messages.map((message) => ({
+        role: message.role,
+        text: message.content,
+        citations: Array.isArray(message.citations) ? message.citations : [],
+        createdAt: message.createdAt,
+      })),
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message || "Failed to fetch chat history" });
+  }
+}
+
+export async function chatStreamSSE(req, res) {
+  const question = String(req.query.question || "").trim();
+  const category = String(req.query.category || "all").toLowerCase();
   const threadId = req.query.threadId ? String(req.query.threadId) : null;
 
-  if (!question) return res.status(400).json({ message: "q is required" });
+  if (!question) return res.status(400).json({ message: "Question is required" });
 
   sseHeaders(res);
   sseEvent(res, "ready", { ok: true });
@@ -62,18 +91,23 @@ export async function chatStreamSSE(req, res) {
       });
     }
     if (!thread) {
+      thread = await ChatThread.findOne({
+        userId: req.user.userId,
+        category,
+      }).sort({ updatedAt: -1, createdAt: -1 });
+    }
+    if (!thread) {
       thread = await ChatThread.create({
         userId: req.user.userId,
         category,
-        state,
-        district,
       });
-      sseEvent(res, "thread", { threadId: thread._id.toString() });
     }
+    sseEvent(res, "thread", { threadId: thread._id.toString() });
 
     // 2) Store user message
     await ChatMessage.create({
       threadId: thread._id,
+      userId: req.user.userId,
       role: "user",
       content: question,
     });
@@ -82,8 +116,6 @@ export async function chatStreamSSE(req, res) {
     // Keep query aligned with how your admin uploads metadata
     const docQuery = { status: "ready" };
     if (category !== "all") docQuery.category = category;
-    if (district) docQuery.district = district;
-    else if (state) docQuery.state = state;
 
     const readyDocs = await Document.find(docQuery)
       .select("_id filename")
@@ -105,9 +137,7 @@ export async function chatStreamSSE(req, res) {
     // 5) Retrieve topK chunks from Qdrant
     const filter = buildQdrantFilter({
       readyDocIds,
-      category,
-      state,
-      district,
+      category: category === "all" ? null : category, // if "all", don't filter by category in Qdrant
     });
 
     const topK = 10;
@@ -147,7 +177,7 @@ export async function chatStreamSSE(req, res) {
     let finalText = "";
 
     const stream = await openai.responses.stream({
-      model: "gpt-5.2-mini",
+      model: "gpt-4o-mini",
       input: [
         {
           role: "system",
@@ -176,8 +206,10 @@ export async function chatStreamSSE(req, res) {
     // 7) Save assistant message + send citations
     await ChatMessage.create({
       threadId: thread._id,
+      userId: req.user.userId,
       role: "assistant",
       content: finalText || "(no output)",
+      citations,
     });
 
     sseEvent(res, "citations", { citations });

@@ -31,7 +31,7 @@ export default function Navbar({ user }) {
             <div className="w-7 h-7 rounded-full bg-teal-500 flex items-center justify-center">
               <i className="ri-file-search-line text-white text-xs"></i>
             </div>
-            <span className="font-semibold text-[15px] text-gray-900">DocQuery AI</span>
+            <span className="font-semibold text-[15px] text-gray-900">Assam Progress AI</span>
           </Link>
 
           <div className="flex items-center gap-3">
@@ -44,6 +44,17 @@ export default function Navbar({ user }) {
               </div>
               Chat
             </Link>
+            {user?.role === "SUPERADMIN" ? (
+              <Link
+                to="/dashboard"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition cursor-pointer"
+              >
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <i className="ri-dashboard-line text-base"></i>
+                </div>
+                Dashboard
+              </Link>
+            ) : ''}
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
@@ -117,7 +128,7 @@ export default function Navbar({ user }) {
                         </div>
                       </Link>
                     </div>
-                  ): ''}
+                  ) : ''}
 
                   {/* Logout */}
                   <div className="pt-1 border-t border-gray-100">
