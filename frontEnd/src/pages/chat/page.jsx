@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import Navbar from '../dashboard/components/Navbar.jsx';
 
-const API_URL = "https://aforassam.com/api";
+const API_URL = "/api";
 
 const categories = [
     'All',

@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 
-const API_URL = "https://aforassam.com/api";
+const API_URL = "/api";
 
 const AuthContext = createContext();
 
 axios.defaults.withCredentials = true;
+axios.defaults.baseURL = "/api";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

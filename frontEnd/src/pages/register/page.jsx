@@ -37,8 +37,8 @@ export default function Register() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <img src={logo} alt="Logo" className="h-16 w-16 mx-auto mb-4 object-contain" />
-            <h1 className="text-3xl font-bold text-gray-900">Admin Registration</h1>
-            <p className="text-gray-500 mt-2">Create a new admin account</p>
+            <h1 className="text-3xl font-bold text-gray-900">User Registration</h1>
+            <p className="text-gray-500 mt-2">Create a new user account</p>
           </div>
 
           <form onSubmit={handleRegistration} className="space-y-6">
@@ -133,7 +133,7 @@ export default function Register() {
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          Secure admin access for PDF management
+          Created with 💖 @ Xpec Innovation Pvt. Ltd.
         </p>
       </div>
     </div>

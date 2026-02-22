@@ -12,8 +12,6 @@ import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { ingestQueue } from "./queue/ingestQueue.js";
 
-import "./worker.js";
-
 const app = express();
 
 app.use(express.json({ limit: "2mb" })); // login payload only
@@ -24,6 +22,8 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN,
     credentials: true, // IMPORTANT for cookies
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 

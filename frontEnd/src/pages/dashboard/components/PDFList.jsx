@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Bounce, ToastContainer, toast } from 'react-toastify';
 import axios from 'axios';
 
-const API_URL = "https://aforassam.com/api";
+const API_URL = "/api";
 
 export default function PDFList({ pdfs, onDelete, user }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
