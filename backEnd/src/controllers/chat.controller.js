@@ -72,7 +72,7 @@ export async function getChatHistory(req, res) {
 }
 
 export async function chatStreamSSE(req, res) {
-  const question = String(req.query.question || "").trim();
+  const question = String(req.query.question || req.query.q || "").trim();
   const category = String(req.query.category || "all").toLowerCase();
   const threadId = req.query.threadId ? String(req.query.threadId) : null;
 

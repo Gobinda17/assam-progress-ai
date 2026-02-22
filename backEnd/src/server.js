@@ -34,6 +34,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminDocumentsRoutes);
 
 app.use("/api/chat", chatRoutes);
+app.use("/chat", chatRoutes);
 
 await connectDB(process.env.MONGO_URI);
 
