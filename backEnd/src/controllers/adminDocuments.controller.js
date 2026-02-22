@@ -4,6 +4,33 @@ import Document from "../models/Document.js";
 import { ingestQueue } from "../queue/ingestQueue.js";
 import { qdrant } from "../services/qdrant.js";
 
+function resolveDocumentPath(doc) {
+    const uploadDir = process.env.UPLOAD_DIR || "/app/storage/uploads";
+    const candidates = [];
+
+    if (doc?.storagePath) {
+        candidates.push(doc.storagePath);
+
+        if (!path.isAbsolute(doc.storagePath)) {
+            candidates.push(path.join(uploadDir, doc.storagePath));
+        }
+
+        candidates.push(path.join(uploadDir, path.basename(doc.storagePath)));
+    }
+
+    if (doc?._id) {
+        candidates.push(path.join(uploadDir, `${doc._id}.pdf`));
+    }
+
+    for (const candidate of candidates) {
+        if (candidate && fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+
+    return null;
+}
+
 
 export async function uploadAdminPdf(req, res) {
   try {
@@ -72,21 +99,12 @@ export async function downloadAdminDocument(req, res) {
         const doc = await Document.findById(id).lean();
         if (!doc) return res.status(404).json({ message: "Document not found" });
 
-        const filePath = doc.storagePath;
-        if (!filePath || !fs.existsSync(filePath)) {
+        const filePath = resolveDocumentPath(doc);
+        if (!filePath) {
             return res.status(404).json({ message: "File not found on disk" });
         }
 
-        // Force download with original filename
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader(
-            "Content-Disposition",
-            `attachment; filename="${encodeURIComponent(doc.filename || path.basename(filePath))}"`
-        );
-
-        const stream = fs.createReadStream(filePath);
-        stream.on("error", () => res.status(500).end());
-        stream.pipe(res);
+        return res.download(filePath, doc.filename || path.basename(filePath));
 
     } catch (err) {
         console.error("downloadAdminDocument error:", err);
@@ -109,34 +127,41 @@ export async function deleteAdminDocument(req, res) {
             });
         }
 
-        // 1) Delete vectors from Qdrant (all points with payload.documentId == id)
-        try {
-            await qdrant.delete(collection, {
-                wait: true,
-                filter: {
-                    must: [{ key: "documentId", match: { value: id } }],
-                },
-            });
-        } catch (e) {
-            // If Qdrant deletion fails, do not delete Mongo/file (keeps consistency)
-            return res.status(500).json({ message: `Failed to delete vectors: ${e.message}` });
+        // 1) Delete vectors from Qdrant (best-effort)
+        let qdrantCleanupError = null;
+        if (collection) {
+            try {
+                await qdrant.delete(collection, {
+                    wait: true,
+                    filter: {
+                        must: [{ key: "documentId", match: { value: String(id) } }],
+                    },
+                });
+            } catch (e) {
+                qdrantCleanupError = e.message;
+                console.warn(`Qdrant delete warning for ${id}:`, e.message);
+            }
         }
 
         // 2) Delete file from disk
         try {
-            if (doc.storagePath && fs.existsSync(doc.storagePath)) {
-                fs.unlinkSync(doc.storagePath);
+            const filePath = resolveDocumentPath(doc);
+            if (filePath) {
+                fs.unlinkSync(filePath);
             }
         } catch (e) {
-            // File delete failed; still remove Mongo to avoid orphan UI, but report it
-            // If you prefer strict consistency, return error instead.
             console.warn("File delete failed:", e.message);
         }
 
         // 3) Delete Mongo record
         await Document.deleteOne({ _id: id });
 
-        return res.json({ ok: true, deletedDocumentId: id });
+        return res.json({
+            ok: true,
+            deletedDocumentId: id,
+            qdrantCleanup: qdrantCleanupError ? "warning" : "ok",
+            qdrantWarning: qdrantCleanupError || undefined,
+        });
     } catch (err) {
         console.error("deleteAdminDocument error:", err);
         return res.status(500).json({ message: err.message || "Deletion failed" });

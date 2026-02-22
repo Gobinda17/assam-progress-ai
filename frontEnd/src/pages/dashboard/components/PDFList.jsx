@@ -24,9 +24,25 @@ export default function PDFList({ pdfs, onDelete, user }) {
     });
   };
 
-  const downloadPdf = (id) => {
-    // Implement download logic, e.g. open a new window with the download URL
-    window.open(`${API_URL}/admin/documents/${id}/download`, "_blank");
+  const downloadPdf = async (id, name) => {
+    try {
+      const response = await axios.get(`${API_URL}/admin/documents/${id}/download`, {
+        responseType: 'blob',
+        withCredentials: true,
+      });
+
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', name || `document-${id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error("Failed to download document: " + (error.response?.data?.message || error.message));
+    }
   }
 
   const handleDeleteClick = async (id) => {
@@ -147,7 +163,7 @@ export default function PDFList({ pdfs, onDelete, user }) {
                   <div className="flex items-center justify-end gap-2">
                     <button
                       className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition cursor-pointer"
-                      title="Download" onClick={() => downloadPdf(pdf.id)}
+                      title="Download" onClick={() => downloadPdf(pdf.id, pdf.name)}
                     >
                       <i className="ri-download-line text-lg"></i>
                     </button>

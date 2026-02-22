@@ -26,6 +26,7 @@ export default function UserManagementPage() {
       const updatedUser = await roleUpdate(userId, newRole);
       setUsers(prev => prev.map(u => u._id === updatedUser.id ? updatedUser : u));
       toast.success(`${updatedUser?.name}’s role updated to ${newRole}`);
+      fetchUsers();
     } catch (error) {
       console.error("Failed to update role:", error);
       toast.error("Failed to update role: " + (error.response?.data?.message || error.message));
