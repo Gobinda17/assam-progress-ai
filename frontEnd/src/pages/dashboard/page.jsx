@@ -81,7 +81,6 @@ export default function Dashboard() {
       uploadDate: new Date().toISOString(),
       status: 'processing',
       vectorized: false,
-      pages: 0,
       _local: true,
     }));
 
