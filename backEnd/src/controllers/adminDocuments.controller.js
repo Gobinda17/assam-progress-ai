@@ -1,49 +1,56 @@
 import fs from "fs";
 import path from "path";
-import { nanoid } from "nanoid";
 import Document from "../models/Document.js";
 import { ingestQueue } from "../queue/ingestQueue.js";
 import { qdrant } from "../services/qdrant.js";
 
+
 export async function uploadAdminPdf(req, res) {
-    try {
-        if (!req.file) return res.status(400).json({ message: "file missing" });
+  try {
+    if (!req.file) return res.status(400).json({ message: "file missing" });
 
-        const documentId = nanoid();
-        const uploadDir = process.env.UPLOAD_DIR || "storage/uploads";
-        fs.mkdirSync(uploadDir, { recursive: true });
-
-        const ext = path.extname(req.file.originalname).toLowerCase() || ".pdf";
-        const finalPath = path.join(uploadDir, `${documentId}${ext}`);
-
-        // move from tmp to final
-        fs.renameSync(req.file.path, finalPath);
-
-        // metadata for filtering
-        console.log("📦 req.body.category received:", req.body.category);
-        const category = req.body.category ? String(req.body.category).toLowerCase() : "others";
-        console.log("✅ Category to be saved:", category);
-
-        await Document.create({
-            _id: documentId,
-            uploadedBy: req.user.userId,
-            filename: req.file.originalname,
-            mime: req.file.mimetype,
-            sizeBytes: req.file.size,
-            storagePath: finalPath,
-            category,
-            status: "queued",
-            progress: { stage: "queued" }
-        });
-
-        // enqueue ingestion job
-        await ingestQueue.add("ingest", { documentId });
-
-        return res.status(201).json({ documentId, status: "queued" });
-    } catch (err) {
-        console.error("uploadAdminPdf error:", err);
-        return res.status(500).json({ message: err.message || "Upload failed" });
+    // documentId created in multer filename() and attached to req
+    const documentId = req.documentId;
+    if (!documentId) {
+      return res.status(500).json({ message: "documentId missing (upload middleware issue)" });
     }
+
+    // final path is exactly where multer saved it
+    const uploadDir = process.env.UPLOAD_DIR || "/app/storage/uploads";
+    const finalPath = path.join(uploadDir, `${documentId}.pdf`);
+
+    // Safety check: file exists
+    if (!fs.existsSync(finalPath)) {
+      return res.status(500).json({ message: "Uploaded file not found on disk" });
+    }
+
+    // metadata for filtering (keep consistent)
+    const category = req.body.category ? String(req.body.category).toLowerCase() : "others";
+    const state = req.body.state ? String(req.body.state) : "";
+    const district = req.body.district ? String(req.body.district) : "";
+
+    await Document.create({
+      _id: documentId,
+      uploadedBy: req.user.userId,
+      filename: req.file.originalname,
+      mime: req.file.mimetype,
+      sizeBytes: req.file.size,
+      storagePath: finalPath,
+      category,
+      state,
+      district,
+      status: "queued",
+      progress: { stage: "queued" },
+    });
+
+    // enqueue ingestion job
+    await ingestQueue.add("ingest", { documentId });
+
+    return res.status(201).json({ documentId, status: "queued" });
+  } catch (err) {
+    console.error("uploadAdminPdf error:", err);
+    return res.status(500).json({ message: err.message || "Upload failed" });
+  }
 }
 
 export async function listAdminDocs(req, res) {
