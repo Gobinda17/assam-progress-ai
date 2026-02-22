@@ -2,6 +2,8 @@ import { validationResult } from "express-validator";
 
 import { verifyAccess } from "../utils/jwt.js";
 
+import User from "../models/User.js";
+
 const handleValidationErrors = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -33,7 +35,7 @@ export function loginAuth(req, res, next) {
   }
 }
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   try {
     if (handleValidationErrors(req, res)) return;
     const header = req.headers.authorization || "";
@@ -46,6 +48,10 @@ export function requireAuth(req, res, next) {
 
     const decoded = verifyAccess(token);
     req.user = decoded; // { userId, role, email }
+    const user = await User.findById(req.user.userId);
+    if (!user || user.status === "inactive") {
+      return res.status(403).json({ message: "Account is inactive. Contact admin." });
+    }
     next();
   } catch (err) {
     return res.status(401).json({ message: "Unauthorized" });

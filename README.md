@@ -33,7 +33,8 @@ A full-stack **RAG (Retrieval-Augmented Generation)** platform for uploading, pr
 - **Vector Embeddings** — PDFs are chunked, embedded via OpenAI `text-embedding-3-small`, and stored in Qdrant (1536-dimensional cosine-similarity collection)
 - **Filtered Retrieval** — Payload indexes on `category`, `state`, `district`, and `documentId` for fast filtered vector search
 - **Dashboard UI** — Real-time status tracking (queued → processing → ready / failed), search, and delete
-- **Profile Management** — Users can update their password
+- **Profile Management** — Users can update their password and reset password via direct form
+- **User Management** — SUPERADMIN can view, update user roles/status, and delete users with safeguards
 - **Internationalisation** — i18next with automatic browser language detection
 
 ---
@@ -111,12 +112,20 @@ assam-progress-ai/
         │   └── AuthContext.jsx # User state, login/register/logout/updatePassword helpers
         ├── i18n/               # i18next setup + locale files (auto-loaded by glob)
         ├── pages/
-        │   ├── home/           # Landing page
-        │   ├── login/          # Login form
-        │   ├── register/       # Registration form
-        │   ├── dashboard/      # PDF management dashboard (upload, list, search)
-        │   │   ├── profile/    # Profile & change-password page
-        │   │   └── users/      # User management page
+        │   ├── home/                    # Landing page
+        │   ├── login/                   # Login form
+        │   ├── register/                # Registration form
+        │   ├── reset-password/          # Password reset form (email, new password)
+        │   ├── dashboard/               # PDF management dashboard (upload, list, search)
+        │   │   ├── profile/             # Profile & change-password page
+        │   │   ├── users/               # User management page (role, status, delete)
+        │   │   ├── components/
+        │   │   │   ├── PDFList.jsx      # PDF list with download/delete
+        │   │   │   ├── UploadSection.jsx
+        │   │   │   └── Navbar.jsx
+        │   │   └── profile/
+        │   │       └── components/
+        │   │           └── ProfileDetails.jsx
         │   └── NotFound.jsx    # 404 page
         ├── router/
         │   └── config.jsx      # Route definitions + ProtectedRoute wrapper
@@ -219,10 +228,20 @@ npm run dev            # Vite dev server at http://localhost:5173
 | `POST` | `/logout` | Cookie | Invalidate refresh token and clear cookies |
 | `GET` | `/me` | Cookie | Return current user profile |
 | `POST` | `/me/update-password` | Cookie | Change current user's password |
+| `POST` | `/reset-password` | Public | Reset password with email and new password |
+| `GET` | `/user-list` | SUPERADMIN | List all users with role and status |
+| `POST` | `/update-role` | SUPERADMIN | Update user role (prevents last SUPERADMIN demotion) |
+| `POST` | `/update-status` | SUPERADMIN | Update user status (active/inactive, prevents last SUPERADMIN deactivation) |
+| `DELETE` | `/user/:userId` | SUPERADMIN | Delete user (prevents last SUPERADMIN deletion) |
 
 **Register / Login body:**
 ```json
 { "name": "Jane Doe", "email": "jane@example.com", "password": "secret123" }
+```
+
+**Reset Password body:**
+```json
+{ "email": "jane@example.com", "newPassword": "newSecret456" }
 ```
 
 **Auth cookies set on login/register/refresh:**
@@ -257,9 +276,12 @@ npm run dev            # Vite dev server at http://localhost:5173
 | `/` | Public | Landing page |
 | `/register` | Public | Registration form |
 | `/login` | Public | Login form |
-| `/dashboard` | Auth required | PDF management dashboard |
+| `/reset-password` | Public | Password reset form (email + new password) |
+| `/chat` | Auth required | Chat interface with AI |
+| `/dashboard` | SUPERADMIN only | PDF management dashboard |
 | `/dashboard/profile` | Auth required | User profile & password change |
-| `/dashboard/users` | Auth required | User management |
+| `/dashboard/users` | SUPERADMIN only | User management (role, status, delete) |
+| `/profile` | Auth required | User profile page |
 | `*` | Public | 404 Not Found |
 
 ---
@@ -269,12 +291,19 @@ npm run dev            # Vite dev server at http://localhost:5173
 | Action | USER | SUPERADMIN |
 |--------|------|-----------|
 | Register / Login | ✅ | ✅ |
-| View dashboard | ✅ | ✅ |
+| Reset password | ✅ | ✅ |
+| View chat interface | ✅ | ✅ |
+| Change own password | ✅ | ✅ |
 | Upload PDFs | ❌ | ✅ |
 | List / status documents | ❌ | ✅ |
-| Change own password | ✅ | ✅ |
+| View PDF management dashboard | ❌ | ✅ |
+| View user management | ❌ | ✅ |
+| Update user role | ❌ | ✅ |
+| Update user status | ❌ | ✅ |
+| Delete user | ❌ | ✅ |
 
 > The first user to register is automatically assigned the `SUPERADMIN` role.
+> SUPERADMIN safeguards: The last SUPERADMIN cannot be demoted, deactivated, or deleted.
 
 ---
 

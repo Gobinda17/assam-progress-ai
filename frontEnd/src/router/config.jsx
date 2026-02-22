@@ -1,6 +1,7 @@
 import NotFound from "../pages/NotFound";
 import Home from "../pages/home/page";
 import Login from "../pages/login/page";
+import ResetPassword from "../pages/reset-password/page";
 import Dashboard from "../pages/dashboard/page";
 import Register from "../pages/register/page";
 import ProfilePage from "../pages/dashboard/profile/page";
@@ -43,6 +44,10 @@ const routes = [
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
   },
   {
     path: "/chat",

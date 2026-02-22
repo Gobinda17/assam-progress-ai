@@ -45,7 +45,7 @@ export default function Dashboard() {
       uploadDate: doc.createdAt || doc.updatedAt || new Date().toISOString(),
       status: mapBackendStatusToUiStatus(doc.status),
       vectorized: doc.status === 'ready',
-      pages: 0,
+      pages: doc.progress?.pagesDone || 0,
       _backendStatus: doc.status,
     }),
     [mapBackendStatusToUiStatus]
@@ -77,6 +77,7 @@ export default function Dashboard() {
       id: `local-${Date.now()}-${index}`,
       name: file.name,
       size: file.size,
+      pages: file.pages || 0,
       uploadDate: new Date().toISOString(),
       status: 'processing',
       vectorized: false,
@@ -249,7 +250,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <PDFList pdfs={filteredPDFs} onDelete={handleDelete} />
+          <PDFList pdfs={filteredPDFs} onDelete={handleDelete} user={user} />
         </div>
       </div>
     </div>

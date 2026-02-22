@@ -51,8 +51,8 @@ export default function Login() {
             <div className="w-16 h-16 bg-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <i className="ri-file-text-line text-3xl text-white"></i>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Login</h1>
-            <p className="text-gray-500 mt-2">Access your PDF management dashboard</p>
+            <h1 className="text-3xl font-bold text-gray-900">User Login</h1>
+            <p className="text-gray-500 mt-2">Access your ASSAM PROGRESS AI</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
@@ -120,7 +120,7 @@ export default function Login() {
 
           <div className="flex flex-col items-center justify-center gap-1 mt-6">
             <div className="text-center">
-              <a href="#" className="text-sm text-teal-500 hover:text-teal-600 transition">
+              <a href="/reset-password" className="text-sm text-teal-500 hover:text-teal-600 transition">
                 Forgot your password?
               </a>
             </div>
@@ -133,7 +133,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          Secure admin access for PDF management
+          Created with 💖 @ Xpec Innovation Pvt. Ltd.
         </p>
       </div>
     </div>

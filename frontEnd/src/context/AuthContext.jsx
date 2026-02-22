@@ -115,6 +115,66 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const userList = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/auth/user-list`);
+      if(res.data?.users) {
+        return res.data.users;
+      }
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  const roleUpdate = async (userId, newRole) => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/update-role`, {
+        userId,
+        newRole,
+      });
+      if(res.data?.user) {
+        return res.data.user;
+      }
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  const statusUpdate = async (userId, newStatus) => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/update-status`, {
+        userId,
+        newStatus,
+      });
+      if(res.data?.user) {
+        return res.data.user;
+      }
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  const deleteUser = async (userId) => {
+    try {
+      const res = await axios.delete(`${API_URL}/auth/user/${userId}`);
+      return res.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  const resetPassword = async (email, newPassword) => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/reset-password`, {
+        email,
+        newPassword,
+      });
+      return res.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
   const value = {
     user,
     isAuthenticated,
@@ -125,6 +185,11 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updatePassword,
+    userList,
+    roleUpdate,
+    statusUpdate,
+    deleteUser,
+    resetPassword,
     API_URL,
   };
 

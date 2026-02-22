@@ -78,8 +78,12 @@ export async function login(req, res) {
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
+    if (user.status === "inactive") {
+      return res.status(403).json({ message: "Account is inactive. Contact admin." });
+    }
+
     const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) return res.status(401).json({ status: 'fail',message: "Invalid credentials" });
+    if (!ok) return res.status(401).json({ status: 'fail', message: "Invalid credentials" });
 
     const accessToken = signAccessToken({
       userId: user._id.toString(),
@@ -143,6 +147,10 @@ export async function refresh(req, res) {
     const user = await User.findById(decoded.userId);
     if (!user || !user.refreshTokenHash)
       return res.status(401).json({ message: "Unauthorized" });
+
+    if (user.status === "inactive") {
+      return res.status(403).json({ message: "Account is inactive. Contact admin." });
+    }
 
     const match = await bcrypt.compare(token, user.refreshTokenHash);
     if (!match) return res.status(401).json({ message: "Unauthorized" });
@@ -228,6 +236,182 @@ export async function updatePassword(req, res) {
 
   } catch (error) {
     console.error("Update password error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function userList(req, res) {
+  try {
+    const users = await User.find().select("_id name email role status createdAt").lean();
+    res.json({ users });
+  } catch (error) {
+    console.error("User list error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function updateUserRole(req, res) {
+  try {
+    const { userId, newRole } = req.body || {};
+    
+    if (!userId || !newRole) {
+      return res.status(400).json({ message: "Missing userId or newRole" });
+    }
+
+    if (!["SUPERADMIN", "USER"].includes(newRole)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    // Only SUPERADMIN can update roles
+    if (req.user.role !== "SUPERADMIN") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Safeguard: if target is SUPERADMIN and trying to change to USER
+    if (targetUser.role === "SUPERADMIN" && newRole === "USER") {
+      // Count remaining SUPERADMINs after this change
+      const superadminCount = await User.countDocuments({ role: "SUPERADMIN" });
+      
+      if (superadminCount === 1) {
+        return res.status(409).json({
+          message: "Cannot demote the last SUPERADMIN. Promote another user first.",
+        });
+      }
+    }
+
+    targetUser.role = newRole;
+    await targetUser.save();
+
+    res.json({
+      message: "Role updated successfully",
+      user: {
+        id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+        status: targetUser.status,
+      },
+    });
+  } catch (error) {
+    console.error("Update user role error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function updateUserStatus(req, res) {
+  try {
+    const { userId, newStatus } = req.body || {};
+    
+    if (!userId || !newStatus) {
+      return res.status(400).json({ message: "Missing userId or newStatus" });
+    }
+
+    if (!["active", "inactive"].includes(newStatus)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    // Only SUPERADMIN can update status
+    if (req.user.role !== "SUPERADMIN") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Safeguard: prevent deactivating the last SUPERADMIN
+    if (targetUser.role === "SUPERADMIN" && newStatus === "inactive") {
+      const superadminCount = await User.countDocuments({ role: "SUPERADMIN" });
+      if (superadminCount === 1) {
+        return res.status(409).json({
+          message: "Cannot deactivate the last SUPERADMIN. Promote another user first.",
+        });
+      }
+    }
+
+    targetUser.status = newStatus;
+    await targetUser.save();
+
+    res.json({
+      message: "Status updated successfully",
+      user: {
+        id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+        status: targetUser.status,
+      },
+    });
+  } catch (error) {
+    console.error("Update user status error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function deleteUserById(req, res) {
+  try {
+    const { userId } = req.params;
+
+    // Only SUPERADMIN can delete users
+    if (req.user.role !== "SUPERADMIN") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Safeguard: prevent deleting the last SUPERADMIN
+    if (targetUser.role === "SUPERADMIN") {
+      const superadminCount = await User.countDocuments({ role: "SUPERADMIN" });
+      if (superadminCount === 1) {
+        return res.status(409).json({
+          message: "Cannot delete the last SUPERADMIN. Promote another user first.",
+        });
+      }
+    }
+
+    await User.deleteOne({ _id: userId });
+
+    res.json({
+      message: "User deleted successfully",
+      deletedUserId: userId,
+    });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function resetPassword(req, res) {
+  try {
+    const { email, newPassword } = req.body || {};
+
+    if (!email || !newPassword) {
+      return res.status(400).json({ message: "Email and new password are required" });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update password
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    await user.save();
+
+    res.json({
+      message: "Password reset successfully. Please log in with your new password.",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
