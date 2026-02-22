@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext.jsx";
+import logo from "../../../assets/logo.png";
 
 export default function Navbar({ user }) {
   const navigate = useNavigate();
@@ -27,10 +28,8 @@ export default function Navbar({ user }) {
     <nav className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to="/dashboard" className="flex items-center cursor-pointer">
-            <div className="w-7 h-7 rounded-full bg-teal-500 flex items-center justify-center">
-              <i className="ri-file-search-line text-white text-xs"></i>
-            </div>
+          <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
+            <img src={logo} alt="Logo" className="h-16 w-16 object-contain" />
             <span className="font-semibold text-[15px] text-gray-900">Assam Progress AI</span>
           </Link>
 

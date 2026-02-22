@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import logo from '../../assets/logo.png';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -48,9 +49,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <i className="ri-file-text-line text-3xl text-white"></i>
-            </div>
+            <img src={logo} alt="Logo" className="h-20 w-20 mx-auto mb-4 object-contain" />
             <h1 className="text-3xl font-bold text-gray-900">User Login</h1>
             <p className="text-gray-500 mt-2">Access your ASSAM PROGRESS AI</p>
           </div>

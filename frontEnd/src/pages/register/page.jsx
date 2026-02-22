@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import logo from '../../assets/logo.png';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -35,9 +36,7 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <i className="ri-file-text-line text-3xl text-white"></i>
-            </div>
+            <img src={logo} alt="Logo" className="h-16 w-16 mx-auto mb-4 object-contain" />
             <h1 className="text-3xl font-bold text-gray-900">Admin Registration</h1>
             <p className="text-gray-500 mt-2">Create a new admin account</p>
           </div>

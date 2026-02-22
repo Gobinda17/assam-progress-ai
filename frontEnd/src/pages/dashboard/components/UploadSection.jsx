@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { pdfCategories } from '../../../mocks/pdfs';
 
 export default function UploadSection({ onUpload }) {
   const fileInputRef = useRef(null);
@@ -8,6 +7,18 @@ export default function UploadSection({ onUpload }) {
   const [pendingFiles, setPendingFiles] = useState(null);
   const [showCategoryError, setShowCategoryError] = useState(false);
   const [dropDownOpen, setDropdownOpen] = useState(false);
+
+  const pdfCategories = [
+    "Health",
+    "Education",
+    "Infrastructure",
+    "Employment",
+    "Women & Youth",
+    "Tea Tribes",
+    "Agriculture",
+    "Law & Order",
+    "Others",
+  ];
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -88,13 +99,12 @@ export default function UploadSection({ onUpload }) {
           <button
             type="button"
             onClick={() => setDropdownOpen(!dropDownOpen)}
-            className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 border rounded-lg text-sm transition cursor-pointer ${
-              showCategoryError && !selectedCategory
+            className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 border rounded-lg text-sm transition cursor-pointer ${showCategoryError && !selectedCategory
                 ? "border-red-400 bg-red-50 text-red-600"
                 : selectedCategory
                   ? "border-teal-300 bg-teal-50 text-teal-800"
                   : "border-gray-300 bg-white text-gray-500 hover:border-teal-400"
-            }`}
+              }`}
           >
             <span className="truncate">
               {selectedCategory || "Select a category..."}
@@ -116,11 +126,10 @@ export default function UploadSection({ onUpload }) {
                     key={cat}
                     type="button"
                     onClick={() => handleCategoryChange(cat)}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition cursor-pointer hover:bg-teal-50 ${
-                      selectedCategory === cat
+                    className={`w-full text-left px-4 py-2.5 text-sm transition cursor-pointer hover:bg-teal-50 ${selectedCategory === cat
                         ? "bg-teal-50 text-teal-700 font-medium"
                         : "text-gray-700"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       {selectedCategory === cat && (
@@ -151,22 +160,19 @@ export default function UploadSection({ onUpload }) {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={handleClick}
-          className={`bg-white rounded-xl shadow-sm border-2 border-dashed transition cursor-pointer ${
-            isDragging
+          className={`bg-white rounded-xl shadow-sm border-2 border-dashed transition cursor-pointer ${isDragging
               ? "border-teal-500 bg-teal-50"
               : "border-gray-300 hover:border-teal-400 hover:bg-slate-50"
-          }`}
+            }`}
         >
           <div className="p-12 text-center">
             <div
-              className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 transition ${
-                isDragging ? "bg-teal-500" : "bg-slate-100"
-              }`}
+              className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 transition ${isDragging ? "bg-teal-500" : "bg-slate-100"
+                }`}
             >
               <i
-                className={`ri-upload-cloud-2-line text-4xl transition ${
-                  isDragging ? "text-white" : "text-gray-400"
-                }`}
+                className={`ri-upload-cloud-2-line text-4xl transition ${isDragging ? "text-white" : "text-gray-400"
+                  }`}
               ></i>
             </div>
 
@@ -246,11 +252,10 @@ export default function UploadSection({ onUpload }) {
           <button
             type="button"
             onClick={handleUploadClick}
-            className={`w-full flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-lg transition whitespace-nowrap cursor-pointer ${
-              selectedCategory
+            className={`w-full flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-lg transition whitespace-nowrap cursor-pointer ${selectedCategory
                 ? "bg-teal-500 hover:bg-teal-600 text-white"
                 : "bg-gray-200 text-gray-500 cursor-not-allowed"
-            }`}
+              }`}
           >
             <i className="ri-upload-2-line text-lg"></i>
             Upload &amp; Vectorize

@@ -28,10 +28,10 @@ function ChatHeader() {
 
 function EmptyState({ onSuggestionClick, selectedCategories }) {
     const suggestions = [
-        'What are the key findings in the ML research paper?',
-        'Summarize the product documentation for API integration.',
-        'What were the 2024 revenue highlights?',
-        'List the technical specifications for the new module.',
+        'Provide an overview of the latest health initiatives in Assam.',
+        'What are the recent developments in Assam’s education sector?',
+        'Summarize the progress on infrastructure projects in Assam.',
+        'How is Assam performing in terms of employment generation?',
     ];
 
     return (
